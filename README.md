@@ -11,7 +11,8 @@ Corre como Docker Compose dentro del LXC `observability` (192.168.8.90, provisio
 - **Prometheus** — scrapea Proxmox (`pve-exporter`), Vault (métricas nativas), y el propio LXC (`node-exporter`).
 - **Grafana** — datasource y dashboard 100% provisionados por archivo, password generado (no `admin`/`admin`).
 - **Alertmanager** — agrupa alertas y las manda a un webhook.
-- **Jaeger** (Idea 7, post-roadmap) — backend de tracing distribuido para el sistema de agentes de [`devops-multiagent`](https://github.com/gaelsg/devops-multiagent). v2 (v1 está EOL desde dic-2025), storage en memoria. UI: http://192.168.8.90:16686/, OTLP en los puertos 4317 (gRPC) / 4318 (HTTP).
+
+**Jaeger ya no corre acá.** Migró al cluster k3s (Idea 9, post-roadmap) — ver sección propia más abajo. `gitops/jaeger/` en este mismo repo describe su estado deseado; el LXC `observability` sigue siendo la fuente de verdad para Prometheus/Grafana/Alertmanager (Docker Compose), no para Jaeger (Kubernetes + ArgoCD).
 
 El webhook es un servicio nuevo en [`devops-multiagent`](https://github.com/gaelsg/devops-multiagent) (`devops-agent webhook`, puerto 8090, LAN) que activa al Diagnostician para explicar la alerta en lenguaje natural y la manda por Telegram — mismo canal que el watcher de un roadmap anterior, pero disparado por una alerta real de Prometheus, no por polling.
 
@@ -41,5 +42,16 @@ Los contenedores usan `restart: unless-stopped` y el daemon de Docker está `ena
 
 `scripts/scan-images.sh` + `systemd/image-scan.timer` (semanal, workstation) — escanea con Trivy las 7 imágenes de terceros que corren en este stack (más Qdrant, de `rag-mcp-server`) y manda un resumen por Telegram. Línea base real: Qdrant con 3 CRITICAL sin fix disponible todavía en Debian (documentado, no ignorado), Grafana con 164 HIGH, el resto entre 0 y 14. Ver [`k8s-mcp-server`](https://github.com/gaelsg/k8s-mcp-server#supply-chain-build-scan-sbom-firma) para el pipeline completo de build+scan+SBOM+firma de una imagen propia.
 
+## Jaeger sobre k3s, gestionado por GitOps (Idea 9, post-roadmap)
+
+`gitops/jaeger/` — manifiestos de Kubernetes (namespace, deployment, services, ingress) para Jaeger, sincronizados al cluster k3s ([`k8s-mcp-server`](https://github.com/gaelsg/k8s-mcp-server)) por [ArgoCD](https://argo-cd.readthedocs.io/), instalado en el propio cluster. `syncPolicy.automated` con `selfHeal: true` — no es solo "desplegar una vez desde YAML", es GitOps de verdad: un cambio manual al cluster (probado en real, escalando el deployment a 3 réplicas a mano) se revierte solo en ~1 segundo para volver a coincidir con lo que dice el repo.
+
+- **UI:** expuesta vía el Traefik que k3s ya trae desde la Idea 6 (sin uso hasta ahora) — `Ingress` con host `jaeger.homelab.local` → `192.168.8.92`. Sin una entrada DNS/hosts real todavía (agregar un rewrite en AdGuard Home o una línea en `/etc/hosts` es un paso manual pendiente); mientras tanto, accesible con `curl -H "Host: jaeger.homelab.local" http://192.168.8.92/`.
+- **OTLP (4317 gRPC, 4318 HTTP):** vía `LoadBalancer` directo, no Ingress — es tráfico de ingesta entre servicios, no de navegador, Traefik no aporta nada ahí. k3s le asigna la IP del propio nodo (`192.168.8.92`).
+- **Storage:** sigue en memoria, mismo criterio que en Docker Compose (Idea 7) — no justifica la complejidad de configurar persistencia en Jaeger v2 para datos de traces.
+
+`OTEL_EXPORTER_OTLP_ENDPOINT` actualizado de `192.168.8.90` a `192.168.8.92` en los 4 repos que mandan traces (`devops-multiagent`, `proxmox-mcp-server`, `rag-mcp-server`, `k8s-mcp-server`).
+
 ## Pendiente
+- Entrada DNS real para `jaeger.homelab.local` (AdGuard Home rewrite) — hoy solo accesible con `Host:` header manual.
 - Métricas de contenedores Docker de LXC 101 vía cAdvisor (fuera de alcance v1).

@@ -61,23 +61,6 @@ services:
       - "3001:3000"
     restart: unless-stopped
 
-  jaeger:
-    # v1 (all-in-one) esta EOL desde dic-2025 -- v2 (imagen "jaeger", ya no
-    # "all-in-one") es la linea con soporte activo. Storage en memoria: la
-    # config persistente de v2 requiere un config.yaml propio de pipeline
-    # tipo OTel Collector (extension jaeger_storage) en vez de las env vars
-    # simples de v1 (SPAN_STORAGE_TYPE=badger) -- no vale la pena el salto
-    # de complejidad para datos de traces, que son de naturaleza mas
-    # efimera que las metricas o los secretos. Documentado como limite
-    # aceptado, no un descuido.
-    image: jaegertracing/jaeger:2.20.0
-    container_name: jaeger
-    ports:
-      - "16686:16686"   # UI
-      - "4317:4317"     # OTLP gRPC
-      - "4318:4318"     # OTLP HTTP
-    restart: unless-stopped
-
 volumes:
   prometheus_data:
   grafana_data:
