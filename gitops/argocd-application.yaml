@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: jaeger
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/gaelsg/observability.git
+    targetRevision: master
+    path: gitops/jaeger
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true    # borra lo que se saque del repo
+      selfHeal: true  # revierte drift manual -- GitOps de verdad, no solo un deploy inicial
+    syncOptions:
+      - CreateNamespace=true
