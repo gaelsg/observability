@@ -1,0 +1,12 @@
+route:
+  receiver: ai-triage
+  group_by: ["alertname"]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 3h
+
+receivers:
+  - name: ai-triage
+    webhook_configs:
+      - url: "http://192.168.8.219:8090/webhook/alertmanager?token=__WEBHOOK_SHARED_SECRET__"
+        send_resolved: true
