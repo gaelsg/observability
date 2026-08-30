@@ -11,6 +11,7 @@ Corre como Docker Compose dentro del LXC `observability` (192.168.8.90, provisio
 - **Prometheus** — scrapea Proxmox (`pve-exporter`), Vault (métricas nativas), y el propio LXC (`node-exporter`).
 - **Grafana** — datasource y dashboard 100% provisionados por archivo, password generado (no `admin`/`admin`).
 - **Alertmanager** — agrupa alertas y las manda a un webhook.
+- **Jaeger** (Idea 7, post-roadmap) — backend de tracing distribuido para el sistema de agentes de [`devops-multiagent`](https://github.com/gaelsg/devops-multiagent). v2 (v1 está EOL desde dic-2025), storage en memoria. UI: http://192.168.8.90:16686/, OTLP en los puertos 4317 (gRPC) / 4318 (HTTP).
 
 El webhook es un servicio nuevo en [`devops-multiagent`](https://github.com/gaelsg/devops-multiagent) (`devops-agent webhook`, puerto 8090, LAN) que activa al Diagnostician para explicar la alerta en lenguaje natural y la manda por Telegram — mismo canal que el watcher de un roadmap anterior, pero disparado por una alerta real de Prometheus, no por polling.
 
