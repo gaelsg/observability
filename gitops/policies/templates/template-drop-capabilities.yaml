@@ -27,6 +27,14 @@ spec:
         violation[{"msg": msg}] {
           container := input.review.object.spec.containers[_]
           drops := container.securityContext.capabilities.drop
-          not "ALL" in drops
+          not drops_all(drops)
           msg := sprintf("el contenedor '%v' no dropea 'ALL' capabilities", [container.name])
+        }
+
+        # Patron clasico de pertenencia en Rego (existential quantification via
+        # _), no el operador "in" -- ese requiere import future.keywords.in,
+        # no habilitado por defecto en el OPA embebido en Gatekeeper. Error
+        # real encontrado al aplicar el ConstraintTemplate, no anticipado.
+        drops_all(drops) {
+          drops[_] == "ALL"
         }
