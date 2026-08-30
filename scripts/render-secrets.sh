@@ -36,7 +36,8 @@ data = json.loads(resp.stdout)["data"]["data"]
 
 with open(f"{repo_root}/.env", "w") as f:
     for key in ("PROXMOX_HOST", "PROXMOX_USER", "PROXMOX_TOKEN_NAME", "PROXMOX_TOKEN_VALUE",
-                "PROXMOX_VERIFY_SSL", "GRAFANA_ADMIN_USER", "GRAFANA_ADMIN_PASSWORD"):
+                "PROXMOX_VERIFY_SSL", "GRAFANA_ADMIN_USER", "GRAFANA_ADMIN_PASSWORD",
+                "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"):
         f.write(f"{key}={data[key]}\n")
 
 with open(f"{repo_root}/alertmanager/alertmanager.yml.template") as f:

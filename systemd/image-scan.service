@@ -1,0 +1,7 @@
+[Unit]
+Description=Escaneo semanal (Trivy) de las imagenes de terceros desplegadas
+
+[Service]
+Type=oneshot
+ExecStartPre=/usr/bin/bash %h/projects/observability/scripts/render-secrets.sh
+ExecStart=/usr/bin/bash %h/projects/observability/scripts/scan-images.sh

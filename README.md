@@ -37,6 +37,9 @@ Grafana: http://192.168.8.90:3001/ · Prometheus: http://192.168.8.90:9090/ · A
 
 Los contenedores usan `restart: unless-stopped` y el daemon de Docker está `enabled` en el LXC — a diferencia del error de Qdrant en la Idea 1 del roadmap anterior (un `podman run` sin política de reinicio), aquí quedó bien desde el primer despliegue.
 
+## Escaneo semanal de imágenes de terceros (Idea 8, post-roadmap)
+
+`scripts/scan-images.sh` + `systemd/image-scan.timer` (semanal, workstation) — escanea con Trivy las 7 imágenes de terceros que corren en este stack (más Qdrant, de `rag-mcp-server`) y manda un resumen por Telegram. Línea base real: Qdrant con 3 CRITICAL sin fix disponible todavía en Debian (documentado, no ignorado), Grafana con 164 HIGH, el resto entre 0 y 14. Ver [`k8s-mcp-server`](https://github.com/gaelsg/k8s-mcp-server#supply-chain-build-scan-sbom-firma) para el pipeline completo de build+scan+SBOM+firma de una imagen propia.
+
 ## Pendiente
-- Diferenciar el mensaje de Telegram entre alerta disparada y resuelta.
 - Métricas de contenedores Docker de LXC 101 vía cAdvisor (fuera de alcance v1).

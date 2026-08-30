@@ -1,3 +1,4 @@
 .env
 .observability-approle
 alertmanager/alertmanager.yml
+scan-report-*.txt

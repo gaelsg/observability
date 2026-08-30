@@ -1,0 +1,9 @@
+[Unit]
+Description=Corre image-scan.service una vez por semana
+
+[Timer]
+OnCalendar=weekly
+Persistent=true
+
+[Install]
+WantedBy=timers.target
