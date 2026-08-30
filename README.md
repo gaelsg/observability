@@ -52,6 +52,32 @@ Los contenedores usan `restart: unless-stopped` y el daemon de Docker está `ena
 
 `OTEL_EXPORTER_OTLP_ENDPOINT` actualizado de `192.168.8.90` a `192.168.8.92` en los 4 repos que mandan traces (`devops-multiagent`, `proxmox-mcp-server`, `rag-mcp-server`, `k8s-mcp-server`).
 
+## Policy-as-code con OPA Gatekeeper (Idea 10, post-roadmap)
+
+`gitops/policies/` — 4 políticas reales, exigidas por el cluster en el momento de crear un Pod, no solo documentadas:
+
+- **`require-non-root`** — todo contenedor debe correr con `runAsNonRoot: true`.
+- **`require-resources`** — todo contenedor debe declarar `requests`/`limits` de CPU y memoria.
+- **`disallow-latest-tag`** — ningún contenedor puede usar la tag `:latest` (mismo criterio que fijar las actions de CI por SHA, Idea 8).
+- **`require-drop-capabilities`** — todo contenedor debe dropear `ALL` capabilities y no correr `privileged`.
+
+Excluyen `kube-system`/`gatekeeper-system`/`argocd` a propósito — son infraestructura de plataforma, no cargas de aplicación (verificado: los pods oficiales de ArgoCD no cumplirían estas políticas).
+
+**Verificado con un rechazo real, no solo "el YAML parece correcto":**
+
+```
+$ kubectl apply -f pod-sin-cumplir.yaml
+Error from server (Forbidden): admission webhook "validation.gatekeeper.sh" denied the request:
+[require-non-root] el contenedor 'test' debe correr con runAsNonRoot: true...
+[require-drop-capabilities] el contenedor 'test' no dropea ninguna capability...
+[require-resources] el contenedor 'test' no tiene resources.limits.memory...
+[disallow-latest-tag] el contenedor 'test' usa la tag ':latest'...
+```
+
+Un pod que sí cumple se acepta sin fricción; el `deployment` de Jaeger (desplegado antes de estas políticas) siguió `Synced`/`Healthy` sin cambios — las políticas no rompieron nada ya desplegado, porque ya cumplía desde el diseño original (Idea 9).
+
+**Dos incidentes reales de implementación, ambos de GitOps + Gatekeeper, no de las políticas en sí:** un `ConstraintTemplate` con un error real de sintaxis Rego (`in` sin el import necesario), y un problema de orden — los `Constraint` no se pueden aplicar en la misma sincronización que los `ConstraintTemplate` que los definen (el CRD se registra de forma asíncrona); los `sync-wave` de ArgoCD no alcanzan para resolverlo, hizo falta separar en dos `Application` independientes. Detalle completo en `docs/29110/idea10-policy-as-code/`.
+
 ## Pendiente
 - Entrada DNS real para `jaeger.homelab.local` (AdGuard Home rewrite) — hoy solo accesible con `Host:` header manual.
 - Métricas de contenedores Docker de LXC 101 vía cAdvisor (fuera de alcance v1).
