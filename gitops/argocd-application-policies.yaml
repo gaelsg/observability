@@ -1,19 +1,50 @@
+# Dos Applications, no una sola con sync-waves: se probo con sync-waves
+# primero y fallo -- ArgoCD valida TODOS los recursos de una sync contra el
+# esquema descubierto de la API antes de aplicar nada, incluso los
+# recursos de una wave posterior, asi que el Constraint (tipo
+# constraints.gatekeeper.sh/v1beta1, creado dinamicamente por Gatekeeper al
+# reconciliar el ConstraintTemplate) sigue fallando "the server could not
+# find the requested resource" aunque este en wave 1. Separar en dos
+# Applications hace que cada una se sincronice y valide de forma
+# independiente -- la de constraints reintenta sola (selfHeal) hasta que
+# el CRD ya existe, sin que el usuario tenga que intervenir.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: policies
+  name: policies-templates
   namespace: argocd
 spec:
   project: default
   source:
     repoURL: https://github.com/gaelsg/observability.git
     targetRevision: master
-    path: gitops/policies
+    path: gitops/policies/templates
   destination:
     server: https://kubernetes.default.svc
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
-    syncOptions:
-      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: policies-constraints
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/gaelsg/observability.git
+    targetRevision: master
+    path: gitops/policies/constraints
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: -1  # reintentos infinitos -- espera a que el CRD del template exista
+      backoff:
+        duration: 10s
+        maxDuration: 1m

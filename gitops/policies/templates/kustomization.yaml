@@ -5,4 +5,3 @@ resources:
   - template-require-resources.yaml
   - template-disallow-latest-tag.yaml
   - template-drop-capabilities.yaml
-  - constraints.yaml
