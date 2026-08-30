@@ -44,6 +44,8 @@ devops-multiagent/
 
 **Regla de alerta para "Vault sellado" no implementada como se planeó.** No existe una métrica `vault_core_unsealed` (se confirmó con `curl` contra el exporter real antes de escribir la regla, no se asumió). Un Vault sellado probablemente deja de responder `/v1/sys/metrics` del todo, lo que ya lo cubriría `TargetDown` — pero esto no se verificó empíricamente porque hacerlo requería sellar Vault de nuevo solo para la prueba, y la política `admin-limited` (Idea 2) no tiene permiso `sys/seal` a propósito. Documentado como pendiente de confirmar la próxima vez que ocurra de forma natural.
 
+**Actualización 2026-08-30:** se hizo la prueba real (root token generado por el usuario para la ocasión, revocado después). Las dos partes de este párrafo resultaron incorrectas: `vault_core_unsealed` sí existe, y `TargetDown` no cubre el caso (el listener HTTP responde `200 OK` sin importar el estado sealed/unsealed). Regla `VaultSealed` implementada sobre `vault_core_unsealed == 0`. Ver `docs/bitacora/2026-08-30-vault-sealed.md`.
+
 ## Fuera de diseño (explícitamente)
 - Métricas de contenedores Docker de LXC 101 (`docker-host`) vía cAdvisor.
 - Retirar el watcher de `devops-multiagent` — sigue corriendo en paralelo.

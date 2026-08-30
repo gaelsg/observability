@@ -13,6 +13,8 @@ Según proceso **SI.5** del Perfil Básico ISO/IEC 29110. Casos mapeados a los c
 
 **Regla de alerta `VaultSealed` basada en una métrica que no existe.** Se planeó `vault_core_unsealed`; al revisar el output real de `/v1/sys/metrics` con `curl` no aparecía. Corregido eliminando la regla dedicada (queda cubierta por `TargetDown` en la práctica, no verificado empíricamente por evitar sellar Vault solo para probarlo — ver diseño).
 
+**Actualización 2026-08-30:** verificado empíricamente (sellando Vault de verdad, ver `docs/bitacora/2026-08-30-vault-sealed.md`) que las dos partes de esta conclusión estaban mal — `vault_core_unsealed` sí existe, y `TargetDown` **no** cubre este caso (el scrape sigue devolviendo `200 OK` con Vault sellado). Regla `VaultSealed` restaurada.
+
 **`/v1/sys/metrics` de Vault protegido por token, no anticipado en el plan.** Requirió `listener.telemetry.unauthenticated_metrics_access = true` en `vault.hcl`. A diferencia del cambio de la Idea 2 (`enable_unauthenticated_access`, sí reloadable por SIGHUP), este vive dentro del bloque `listener` y **no** se recarga en caliente — hizo falta `systemctl restart vault` y un unseal manual normal (3 llaves, sin ceremonia de root).
 
 **Firewall del workstation bloqueaba el webhook.** `ufw` estaba activo y no dejaba pasar conexiones entrantes al puerto 8090 desde el LXC — la primera alerta real quedó "activa" en Alertmanager pero sin poder entregarse (confirmado con un `curl` directo desde el LXC al puerto del webhook: timeout). Resuelto con `sudo ufw allow from 192.168.8.0/24 to any port 8090 proto tcp`; Alertmanager reintentó automáticamente sin necesidad de reiniciar nada, y la entrega se completó.

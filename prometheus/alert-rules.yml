@@ -10,16 +10,21 @@ groups:
           summary: "Target {{ $labels.job }} caido"
           description: "{{ $labels.instance }} lleva mas de 2 minutos sin responder al scrape."
 
-      # No existe una metrica "vault_core_unsealed" (se investigo el output
-      # real del exporter con curl antes de asumirlo - no estaba). Un Vault
-      # sellado probablemente deja de responder /v1/sys/metrics (quedaria
-      # cubierto por TargetDown de arriba), pero esto no se verifico
-      # empiricamente - habria requerido sellar Vault de nuevo solo para
-      # probarlo, y el vault-admin AppRole no tiene permiso sys/seal a
-      # proposito (misma politica admin-limited de la Idea 2). Pendiente:
-      # confirmar en la practica la proxima vez que Vault quede sellado por
-      # otra razon. vault_core_active si existe pero mide activo/standby en
-      # un cluster, no sealed/unsealed - no aplica a este nodo unico.
+      # Verificado empiricamente 2026-08-30 (root token generado con la
+      # ceremonia generate-root, Vault sellado/desellado a proposito): la
+      # metrica "vault_core_unsealed" SI existe (la revision original de la
+      # Idea 3 se habia equivocado, o el build de Vault en ese momento no la
+      # exponia). Ademas se confirmo que TargetDown NO cubre este caso:
+      # /v1/sys/metrics sigue devolviendo 200 OK con Vault sellado (solo
+      # cambian los valores internos), asi que el scrape nunca falla.
+      - alert: VaultSealed
+        expr: vault_core_unsealed == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Vault sellado"
+          description: "vault_core_unsealed en 0 en {{ $labels.instance }} - Vault no puede servir secretos hasta que se desselle con 3 de las 5 unseal keys."
 
       - alert: HighCPU
         expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 90
