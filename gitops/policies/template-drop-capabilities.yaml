@@ -1,0 +1,32 @@
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8srequiredropcapabilities
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sRequireDropCapabilities
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8srequiredropcapabilities
+
+        violation[{"msg": msg}] {
+          container := input.review.object.spec.containers[_]
+          container.securityContext.privileged == true
+          msg := sprintf("el contenedor '%v' corre en modo privileged", [container.name])
+        }
+
+        violation[{"msg": msg}] {
+          container := input.review.object.spec.containers[_]
+          not container.securityContext.capabilities.drop
+          msg := sprintf("el contenedor '%v' no dropea ninguna capability (falta 'ALL' en securityContext.capabilities.drop)", [container.name])
+        }
+
+        violation[{"msg": msg}] {
+          container := input.review.object.spec.containers[_]
+          drops := container.securityContext.capabilities.drop
+          not "ALL" in drops
+          msg := sprintf("el contenedor '%v' no dropea 'ALL' capabilities", [container.name])
+        }

@@ -1,0 +1,48 @@
+# Namespaces de plataforma excluidos a proposito: kube-system, gatekeeper-system
+# y argocd son infraestructura del propio cluster, no cargas de aplicacion --
+# verificado que los pods de ArgoCD (manifiesto oficial) no traen resources ni
+# runAsNonRoot por defecto. Estas politicas gobiernan lo que se despliega
+# como aplicacion (ej. observability/), no el control plane del cluster.
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sRequireNonRoot
+metadata:
+  name: require-non-root
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+    excludedNamespaces: ["kube-system", "gatekeeper-system", "argocd"]
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sRequireResources
+metadata:
+  name: require-resources
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+    excludedNamespaces: ["kube-system", "gatekeeper-system", "argocd"]
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sDisallowedTags
+metadata:
+  name: disallow-latest-tag
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+    excludedNamespaces: ["kube-system", "gatekeeper-system", "argocd"]
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sRequireDropCapabilities
+metadata:
+  name: require-drop-capabilities
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+    excludedNamespaces: ["kube-system", "gatekeeper-system", "argocd"]

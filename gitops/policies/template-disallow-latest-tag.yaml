@@ -1,0 +1,27 @@
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8sdisallowedtags
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sDisallowedTags
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8sdisallowedtags
+
+        violation[{"msg": msg}] {
+          container := input.review.object.spec.containers[_]
+          img := container.image
+          endswith(img, ":latest")
+          msg := sprintf("el contenedor '%v' usa la tag ':latest' (%v) -- fijar una version especifica (mismo criterio que las actions de CI fijadas por SHA, Idea 8)", [container.name, img])
+        }
+
+        violation[{"msg": msg}] {
+          container := input.review.object.spec.containers[_]
+          img := container.image
+          not contains(img, ":")
+          msg := sprintf("el contenedor '%v' no especifica tag (%v) -- Docker usa 'latest' por defecto, mismo problema", [container.name, img])
+        }
