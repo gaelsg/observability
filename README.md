@@ -78,6 +78,29 @@ Un pod que sí cumple se acepta sin fricción; el `deployment` de Jaeger (desple
 
 **Dos incidentes reales de implementación, ambos de GitOps + Gatekeeper, no de las políticas en sí:** un `ConstraintTemplate` con un error real de sintaxis Rego (`in` sin el import necesario), y un problema de orden — los `Constraint` no se pueden aplicar en la misma sincronización que los `ConstraintTemplate` que los definen (el CRD se registra de forma asíncrona); los `sync-wave` de ArgoCD no alcanzan para resolverlo, hizo falta separar en dos `Application` independientes. Detalle completo en `docs/29110/idea10-policy-as-code/`.
 
+## Logs centralizados con Loki + Promtail (Idea 11, post-roadmap)
+
+Tercer pilar de observabilidad (métricas + trazas + **logs**). Loki corre en este mismo
+`docker-compose.yml`, storage en filesystem local, retención 7 días. Promtail corre en
+dos lugares: dentro de la LXC (Docker service discovery, recolecta los contenedores de
+este stack) y directo en el **host** `batman01` (paquete oficial de Grafana, lee
+`journald`, incluye los logs de `proxmox-autoupdate.service`). Datasource nuevo en el
+mismo Grafana — Explore → `Loki`.
+
+Dos incidentes reales del despliegue: Grafana no recarga datasources nuevos con un
+`docker compose up -d` si el propio servicio `grafana` no cambió (hizo falta
+`docker compose restart grafana` explícito), y el usuario `promtail` del paquete `.deb`
+tiene grupo `nogroup`, no un grupo propio — `install -d -g promtail ...` falla con
+`invalid group`. Detalle completo, incluido un falso positivo de diagnóstico
+(confundir logs viejos por usar `journalctl -n` en vez de `--since` después de un
+restart), en `docs/bitacora/2026-09-05-logs-loki.md`.
+
+**Pendiente, alcance recortado a propósito:** LXC 101 (docker-host) y 105 (Plane)
+necesitan su propio Promtail (entornos Docker separados); Nextcloud (LXC 100) no corre
+en Docker, necesita leer logs de aplicación distinto; k3s (LXC 104) necesita un
+DaemonSet de Promtail nativo de k8s vía GitOps, no este mecanismo.
+
 ## Pendiente
 - Entrada DNS real para `jaeger.homelab.local` (AdGuard Home rewrite) — hoy solo accesible con `Host:` header manual.
 - Métricas de contenedores Docker de LXC 101 vía cAdvisor (fuera de alcance v1).
+- Promtail en LXC 101/105/100, y DaemonSet de Promtail en k3s (ver Idea 11 arriba).

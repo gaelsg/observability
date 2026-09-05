@@ -1,0 +1,26 @@
+# Corre directo en batman01 (el host, no un LXC) via el paquete .deb oficial
+# de Grafana -- lee journald y lo manda al Loki que corre en la LXC
+# observability (192.168.8.90). Asi los logs de systemd del host (incluido
+# proxmox-autoupdate.service/unattended-upgrades) quedan centralizados junto
+# con el resto, en vez de sueltos en journalctl local.
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /var/lib/promtail/positions.yaml
+
+clients:
+  - url: http://192.168.8.90:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: journal
+    journal:
+      max_age: 12h
+      path: /var/log/journal
+      labels:
+        job: systemd-journal
+        host: batman01
+    relabel_configs:
+      - source_labels: ['__journal__systemd_unit']
+        target_label: unit

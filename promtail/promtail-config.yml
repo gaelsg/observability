@@ -1,0 +1,25 @@
+# Recolecta logs de los contenedores Docker de ESTA LXC (102): prometheus,
+# pve-exporter, node-exporter, alertmanager, grafana, loki, promtail mismo.
+# LXC 101 (docker-host) y 105 (plane) quedan para una segunda vuelta -- ver
+# docs/bitacora/ -- porque son entornos Docker separados, no este compose.
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+    relabel_configs:
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: 'container'
+      - source_labels: ['__meta_docker_container_log_stream']
+        target_label: 'stream'
