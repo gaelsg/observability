@@ -100,7 +100,18 @@ necesitan su propio Promtail (entornos Docker separados); Nextcloud (LXC 100) no
 en Docker, necesita leer logs de aplicación distinto; k3s (LXC 104) necesita un
 DaemonSet de Promtail nativo de k8s vía GitOps, no este mecanismo.
 
+## SSO con Authentik (Idea 12, post-roadmap)
+
+Grafana ahora tiene login vía [`sso`](https://github.com/gaelsg/sso) (Authentik,
+OIDC) además del login local. Proveedor y aplicación creados vía la API de
+Authentik. Dos incidentes reales del mismo origen: `GF_SERVER_ROOT_URL` faltante
+rompía el `redirect_uri`, y acceder a Authentik por HTTP plano (no HTTPS) dejaba
+sin funcionar APIs del navegador que la pantalla de login necesita (WebAuthn) —
+mismo problema de "contexto seguro" que ya había roto el copiado del token de
+servicio. Detalle completo en `docs/bitacora/2026-09-05-sso-grafana.md`.
+
 ## Pendiente
 - Entrada DNS real para `jaeger.homelab.local` (AdGuard Home rewrite) — hoy solo accesible con `Host:` header manual.
 - Métricas de contenedores Docker de LXC 101 vía cAdvisor (fuera de alcance v1).
 - Promtail en LXC 101/105/100, y DaemonSet de Promtail en k3s (ver Idea 11 arriba).
+- Mapeo de roles/grupos de Authentik a roles de Grafana (hoy todo login SSO entra como Viewer).

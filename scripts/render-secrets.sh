@@ -37,6 +37,7 @@ data = json.loads(resp.stdout)["data"]["data"]
 with open(f"{repo_root}/.env", "w") as f:
     for key in ("PROXMOX_HOST", "PROXMOX_USER", "PROXMOX_TOKEN_NAME", "PROXMOX_TOKEN_VALUE",
                 "PROXMOX_VERIFY_SSL", "GRAFANA_ADMIN_USER", "GRAFANA_ADMIN_PASSWORD",
+                "GRAFANA_OIDC_CLIENT_ID", "GRAFANA_OIDC_CLIENT_SECRET",
                 "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"):
         f.write(f"{key}={data[key]}\n")
 

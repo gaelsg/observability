@@ -53,6 +53,28 @@ services:
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      # Sin esto Grafana arma el redirect_uri de OAuth con su URL interna
+      # (localhost:3000) en vez de la URL externa real -- causa el "Redirect
+      # URI Error" en Authentik aunque el registrado ahi sea correcto.
+      GF_SERVER_ROOT_URL: "http://192.168.8.90:3001/"
+      # SSO via Authentik (OIDC) -- login local con admin/password sigue
+      # disponible aparte, no se desactiva (via GF_AUTH_DISABLE_LOGIN_FORM).
+      GF_AUTH_GENERIC_OAUTH_ENABLED: "true"
+      GF_AUTH_GENERIC_OAUTH_NAME: "Authentik"
+      GF_AUTH_GENERIC_OAUTH_CLIENT_ID: ${GRAFANA_OIDC_CLIENT_ID}
+      GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET: ${GRAFANA_OIDC_CLIENT_SECRET}
+      GF_AUTH_GENERIC_OAUTH_SCOPES: "openid profile email"
+      # HTTPS (9443), no HTTP (9000): el frontend de Authentik intenta
+      # inicializar WebAuthn/passkeys en la pantalla de login, y esa API del
+      # navegador no existe fuera de un contexto seguro -- mismo motivo por
+      # el que el boton de copiar del token fallaba antes. Certificado
+      # autofirmado, de ahi el TLS_SKIP_VERIFY_INSECURE.
+      GF_AUTH_GENERIC_OAUTH_AUTH_URL: "https://192.168.8.94:9443/application/o/authorize/"
+      GF_AUTH_GENERIC_OAUTH_TOKEN_URL: "https://192.168.8.94:9443/application/o/token/"
+      GF_AUTH_GENERIC_OAUTH_API_URL: "https://192.168.8.94:9443/application/o/userinfo/"
+      GF_AUTH_GENERIC_OAUTH_TLS_SKIP_VERIFY_INSECURE: "true"
+      GF_AUTH_GENERIC_OAUTH_USE_PKCE: "true"
+      GF_AUTH_GENERIC_OAUTH_ALLOW_SIGN_UP: "true"
     volumes:
       - grafana_data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
